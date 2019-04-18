@@ -1,5 +1,9 @@
 var express = require('express');
 var router = express.Router();
+const jwt = require('jsonwebtoken');
+//On configure le programme avec les variables d'envirronement
+const url = process.env.MONGODB_URI || "mongodb://localhost:27017/notes-api";
+const JwtCle = process.env.JWT_KEY || 'secret';
 
 router.post('/',function(req,res,next){
   //res.render('signup', { title: 'Notes-Pages' });
@@ -24,8 +28,6 @@ module.exports = router;
 function signupFunction(user,password,res){
   const MongoClient = require('mongodb').MongoClient;
   const assert = require('assert');
-  // Connection URL
-  const url = 'mongodb://localhost:27017/notes-api';
   // Database Name
   const dbName = 'notes-api';
 
@@ -44,11 +46,23 @@ function signupFunction(user,password,res){
     var myobj = { username: user, password: password };
     var myCol = db.collection("users");
     if(await myCol.findOne({username:user})){
-      res.status(400).send({error: 'Cet identifiant est déjà associé à un compte'})
+      res.status(400).send({error: 'Cet identifiant est déjà associé à un compte'});
     }
     else{
       await myCol.insertOne(myobj);
-      res.render('signup');
+      const JWTToken = jwt.sign({
+        email: user.email,
+        _id: user._id
+      },
+      JwtCle,
+       {
+         expiresIn: '2h'
+       });
+       res.status(200).json({
+          success: 'Welcome to the JWT Auth',
+          token: JWTToken
+        });
+      res.send({error:"null",token:JWTToken});
     }
   } catch (err) {
     console.log(err.stack);

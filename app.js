@@ -11,6 +11,7 @@ var signinRouter = require('./routes/signin');
 
 var app = express();
 
+app.set('port', process.env.PORT || 3000);
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'hjs');
@@ -45,6 +46,5 @@ app.use(function(err, req, res, next) {
 module.exports = app;
 
 //Etape 1 : Avoir une base de données dans laquel taper afin de pouvoir réaliser les tests.
-  //Objectif 1 : Se connecter à la base de donnée.
-  //Objectif 2 : Réussir lorsque tu te connecte à l'url /signup à créer un user.
-  //Objectif 3 : Réussir lorsque tu te connecte à l'URL /signin à vérifier dans la base.
+  //Objectif 1 : Intégrer le token dans ton code
+  //Objectif 2 : Utiliser les variables d'envirronement au lieu des variables de ton code.

@@ -1,5 +1,6 @@
 var express = require('express');
 var router = express.Router();
+const jwt = require('jsonwebtoken');
 
 router.post('/',function(req,res,next){
   //res.render('signup', { title: 'Notes-Pages' });
@@ -47,7 +48,18 @@ function signupFunction(user,password,res){
       res.status(400).send({error: 'Cet identifiant est inconnu'})
     }
     else{
-      res.render('signup');
+      const JWTToken = jwt.sign({
+        email: user.email,
+        _id: user._id
+      },
+      'secret',
+       {
+         expiresIn: '2h'
+       });
+       res.status(200).json({
+          success: 'Welcome to the JWT Auth',
+          token: JWTToken
+        });
     }
   } catch (err) {
     console.log(err.stack);
