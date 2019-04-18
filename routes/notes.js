@@ -11,6 +11,38 @@ const url = 'mongodb://localhost:27017/notes-api';
 // Nom de la base
 const dbName = 'notes-api';
 
+app.put('/',  async function(req, res){
+  async function() {
+    const client = new MongoClient(url);
+    await client.connect();
+    try{
+      await jwt.verify(token, JWT_KEY, async function(err, decoded){
+        if(err){
+          res.status(401).send({
+            error: "Utilisateur non connecté"
+          })
+        }else{
+          const db = client.db(dbName);
+            const noteContent = {
+              userId: decoded.userid,
+              content: req.body.content,
+              createdAt: getTodayDate(),
+              lastUpdatedAt: null,
+            }
+            const r = await db.collection('notes').insertOne(noteContent);
+            client.close();
+            res.send({error: null, note: noteContent});
+        }
+      });
+   }catch{
+    console.log(err.stack);
+    res.send({error: error.message, notes: []});
+   } 
+    client.close();
+  }
+
+});
+
 router.delete('/:id', function(req, res, next) {
   
   var idUser = "" //Récupération de l'id par obtenue grâce a la connexion
