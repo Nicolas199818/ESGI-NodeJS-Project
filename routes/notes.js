@@ -14,7 +14,7 @@ const dbName = 'notes-api';
 router.delete('/:id', function(req, res, next) {
   
   var idUser = "" //Récupération de l'id par obtenue grâce a la connexion
-  var noteId = "" //Récupération de l'id de la note obtenue lors de la requête
+  const noteId = req.params.id.split('id=')[1]; //Récupération de l'id de la note obtenue lors de la requête
 
   async function() {
 
@@ -29,11 +29,11 @@ router.delete('/:id', function(req, res, next) {
           }else{
             const db = client.db(dbName);
             const col = db.collection('notes');
-            docs.findOne({_id:noteId}).toArray()
+            docs.findOne({_id:ObjectId(noteId)}).toArray()
             if(docs.userId != idUser){
                res.status(403).send({error: "Accès non autorisé à cette note", note: {}})
             }
-            if(!await docs.deleteOne({_id:noteId, userId, idUser})){
+            if(!await docs.deleteOne({_id:ObjectId(noteId), userId: ObjectId(idUser) })){
                res.status(404).send({error: "Cet identifiant est inconnu", note: {}})
             }
             else{
@@ -51,9 +51,10 @@ router.delete('/:id', function(req, res, next) {
 
 router.patch('/:id', function(req, res, next) {
   
-  var idUser = "" //Récupération de l'id par obtenue grâce a la connexion
-  var noteId = "" //Récupération de l'id de la note obtenue lors de la requête
+  const idUser = "" //Récupération de l'id par obtenue grâce a la connexion
+  const noteId = req.params.id.split('id=')[1]; //Récupération de l'id de la note obtenue lors de la requête
   var currentTime = getDateDay();
+  const newNote = req.body.content;
 
   async function() {
 
@@ -68,14 +69,23 @@ router.patch('/:id', function(req, res, next) {
         }else{
           const db = client.db(dbName);
           const col = db.collection('notes');
-          docs.findOne({_id:noteId}).toArray()
+          docs.findOne({_id:ObjectId(noteId)}).toArray()
           if(docs.userId != idUser){
             res.status(403).send({error: "Accès non autorisé à cette note", note: {}})
           }
-          if(!await docs.deleteOne({_id:noteId, userId, idUser})){
+          if(!await docs.deleteOne({_id:ObjectId(noteId), userId: ObjectId(idUser)})){
             res.status(404).send({error: "Cet identifiant est inconnu", note: {}})            }
           else{
-            res.status(200).render("Note supprimé");
+            await db.collection('notes').update(
+                        { _id: ObjectId(noteId) },
+                        {
+                          $set: {
+                            content: newNote,
+                            lastUpdatedAt: getDateDay()
+                          }
+                        });
+                      const updatedNote = await db.collection('notes').find({ _id: ObjectId(noteId) }).toArray();
+                      res.status(200).send({error: null, note: updatedNote});
           }
         } 
       });    
