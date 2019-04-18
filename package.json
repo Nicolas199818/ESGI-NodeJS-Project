@@ -7,6 +7,6 @@
         "ejs": "~2.1.4",
         "express": "^4.16.4"
     },
-    "author": "Mateo21 <mateo21@email.com>",
+    "author": "ESGI <arnaud.salomon20@gmail.com>",
     "description": "Un gestionnaire de todolist ultra basique"
 }
