@@ -1,131 +1,156 @@
 var express = require('express');
 var router = express.Router();
-
-const fs = require('fs');
 const jwt = require('jsonwebtoken');
-const MongoClient = require('mongodb').MongoClient;
-const assert = require('assert');
 
+const MongoClient = require('mongodb').MongoClient;
+const ObjectId = require('mongodb').ObjectId;
 // URL de connexion
-const url = 'mongodb://localhost:27017/notes-api';
+const url = process.env.MONGODB_URI || "mongodb://localhost:27017/notes-api";
+const JwtCle = process.env.JWT_KEY || 'secret';
 // Nom de la base
 const dbName = 'notes-api';
 
-app.put('/',  async function(req, res){
-  async function() {
+/* GET users listing. */
+router.get('/', async function(req, res, next) {
+  //Objectif 1 : Checker s'il y a un token dans l'entête. S'il n'y a pas de tocken --> une erreur.
+  const token = req.header('Authorization');
+  console.log('ON test le token '+req.header('Authorization'));
     const client = new MongoClient(url);
     await client.connect();
-    try{
-      await jwt.verify(token, JWT_KEY, async function(err, decoded){
-        if(err){
-          res.status(401).send({
-            error: "Utilisateur non connecté"
-          })
-        }else{
-          const db = client.db(dbName);
-            const noteContent = {
-              userId: decoded.userid,
-              content: req.body.content,
-              createdAt: getTodayDate(),
-              lastUpdatedAt: null,
-            }
-            const r = await db.collection('notes').insertOne(noteContent);
-            client.close();
-            res.send({error: null, note: noteContent});
-        }
-      });
-   }catch{
-    console.log(err.stack);
-    res.send({error: error.message, notes: []});
-   } 
-    client.close();
+  try{
+    var decode =  jwt.verify(token,JwtCle);
+    console.log('On test le verify : '+decode.userId);
+    
+  }catch(err){
+    console.log(err);
+    res.status(401).send({error:"Utilisateur non connecte"});
   }
 
+  try{
+    await client.connect();
+    const db = client.db(dbName);
+    const mycol = db.collection('notes');
+    var result = await mycol.find({userId : decode.userId}).toArray();
+    console.log("Voici la liste de vos notes :\n");
+    res.send(result);
+  }catch(err){
+    console.log(err);
+  }
+
+
 });
 
-router.delete('/:id', function(req, res, next) {
-  
-  var idUser = "" //Récupération de l'id par obtenue grâce a la connexion
-  const noteId = req.params.id.split('id=')[1]; //Récupération de l'id de la note obtenue lors de la requête
+router.put('/', async function(req, res){
+    const token = req.header('Authorization');
+    const client = new MongoClient(url);
+    
+    try{
+    var decode = jwt.verify(token,JwtCle);
+    console.log('On test le verify : '+decode.userId);
+    
+    }catch(err){
+      console.log(err);
+    }
 
-  async function() {
-
-      const client = new MongoClient(url);
+    try{
       await client.connect();
-
-      try {
-        const token = req.get('x-access-token');
-        await jwt.verify(token, JWT_KEY, async function(err, decoded){
-          if(err){
-            res.status(401).send({error: "Utilisateur non connecté", note: {}})
-          }else{
-            const db = client.db(dbName);
-            const col = db.collection('notes');
-            docs.findOne({_id:ObjectId(noteId)}).toArray()
-            if(docs.userId != idUser){
-               res.status(403).send({error: "Accès non autorisé à cette note", note: {}})
-            }
-            if(!await docs.deleteOne({_id:ObjectId(noteId), userId: ObjectId(idUser) })){
-               res.status(404).send({error: "Cet identifiant est inconnu", note: {}})
-            }
-            else{
-                res.status(200).send({error: null});
-            }
-
-          } 
-        });    
-      } catch (err) {
-       console.log(err.stack);
-      }
+      const db = client.db(dbName);
+      var myCol = db.collection("notes");
+      const noteContent = {
+        userId: decode.userId,
+        content: req.body.content,
+        createdAt: getDateDay(),
+        lastUpdatedAt: null
+        }
+      const result = myCol.insertOne(noteContent, function (error, response) {
+        if(error) {
+         console.log('Error occurred while inserting');
+        }
+      });
       client.close();
-      } 
+      res.send({error: null, note: noteContent});
+    }catch(err){
+      console.log(err.stack);
+    } 
+    client.close();
+
 });
 
-router.patch('/:id', function(req, res, next) {
+router.delete('/:id', async function(req, res, next) {
   
-  const idUser = "" //Récupération de l'id par obtenue grâce a la connexion
+  const token = req.header('Authorization');
+  const client = new MongoClient(url);
+  
+  
+    try{
+    var decode = jwt.verify(token,JwtCle);
+    }catch(err){
+      console.log(err);
+    }
+    
+    try {
+      const noteId = req.params.id.split('id=')[1];
+      
+      await client.connect();
+      const db = client.db(dbName);
+      const col = db.collection('notes');
+      const result = await col.findOne({_id:ObjectId(noteId)});
+      console.log(result);
+      if(result.userId != decode.userId){
+        res.status(403).send({error: "Accès non autorisé à cette note", note: {}})
+      }
+      if(!await col.deleteOne({_id:ObjectId(noteId)})){
+        res.status(404).send({error: "Cet identifiant est inconnu", note: {}})
+      }else{
+        res.status(200).send({error: null});
+      }
+    }catch (err) {
+      console.log(err.stack);
+    }
+    client.close();
+});
+
+router.patch('/:id', async function(req, res, next) {
+  
   const noteId = req.params.id.split('id=')[1]; //Récupération de l'id de la note obtenue lors de la requête
   var currentTime = getDateDay();
   const newNote = req.body.content;
 
-  async function() {
-
-    const client = new MongoClient(url);
-    await client.connect();
+  const token = req.header('Authorization');
+  const client = new MongoClient(url);
+  
+  try{
+    var decode = jwt.verify(token,JwtCle);
+  }catch(err){
+    console.log(err);
+  }
 
     try {
-      const token = req.get('x-access-token');
-      await jwt.verify(token, JWT_KEY, async function(err, decoded){
-        if(err){
-          res.status(401).send({error: "Utilisateur non connecté", note: {}})
-        }else{
-          const db = client.db(dbName);
-          const col = db.collection('notes');
-          docs.findOne({_id:ObjectId(noteId)}).toArray()
-          if(docs.userId != idUser){
-            res.status(403).send({error: "Accès non autorisé à cette note", note: {}})
-          }
-          if(!await docs.deleteOne({_id:ObjectId(noteId), userId: ObjectId(idUser)})){
-            res.status(404).send({error: "Cet identifiant est inconnu", note: {}})            }
-          else{
-            await db.collection('notes').update(
-                        { _id: ObjectId(noteId) },
-                        {
-                          $set: {
-                            content: newNote,
-                            lastUpdatedAt: getDateDay()
-                          }
-                        });
-                      const updatedNote = await db.collection('notes').find({ _id: ObjectId(noteId) }).toArray();
-                      res.status(200).send({error: null, note: updatedNote});
-          }
-        } 
-      });    
-    } catch (err) {
+      
+      await client.connect();
+      const db = client.db(dbName);
+      const col = db.collection('notes');
+      const result = await col.findOne({_id:ObjectId(noteId)});
+      if(result.userId != decode.userId){
+        res.status(403).send({error: "Accès non autorisé à cette note", note: {}})
+      }
+      if(!await col.findOne({_id:ObjectId(noteId)})){
+        res.status(404).send({error: "Cet identifiant est inconnu", note: {}})
+      }else{
+        await db.collection('notes').update({ _id: ObjectId(noteId) },
+          {
+            $set: {
+              content: newNote,
+              lastUpdatedAt: getDateDay()
+            }
+        });
+        const updatedNote = await db.collection('notes').find({ _id: ObjectId(noteId) }).toArray();
+        res.status(200).send({error: null, note: updatedNote});
+      }
+    }catch (err) {
      console.log(err.stack);
     }
     client.close();
-  }
 }); 
 
 function getDateDay(){
@@ -144,52 +169,9 @@ function getDateDay(){
       if (month < 10) {
         month = '0' + month;
       }
-      var todayAsString = day + '/' + month + '/' + yyyy + ' ' + hours + ':' + minutes + ':' + seconds;
+      var todayAsString = day + '/' + month + '/' + year + ' ' + hours + ':' + minutes + ':' + seconds;
       return todayAsString;
-}
-router.get('/', function(req, res, next) {
-  //Objectif 1 : Checker s'il y a un token dans l'entête. S'il n'y a pas de tocken --> une erreur.
-
-});
-
-function signupFunction(user,password,res){
-  (async function() {
-
-  const client = new MongoClient(url);
-
-  try {
-    // Use connect method to connect to the Server
-    await client.connect();
-    const db = client.db(dbName);
-    //On stocke d'abord la connexion.
-    //On check si le nom existe dans la base.
-    //Si oui erreur. Si non on insère.
-
-    var myobj = { username: user, password: password };
-    var myCol = db.collection("users");
-    if(!await myCol.findOne({username:user})){
-      res.status(400).send({error: 'Cet identifiant est inconnu'})
-    }
-    else{
-      const JWTToken = jwt.sign({
-        email: user.email,
-        _id: user._id
-      },
-      'secret',
-       {
-         expiresIn: '2h'
-       });
-       res.status(200).json({
-          success: 'Welcome to the JWT Auth',
-          token: JWTToken
-        });
-    }
-  } catch (err) {
-    console.log(err.stack);
-  }
-
-  client.close();
-})();
 }
 
 module.exports = router;
+
