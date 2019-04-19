@@ -63,7 +63,7 @@ function signupFunction(user,password,res){
           },
           JwtCle,
            {
-             expiresIn: '2h'
+             expiresIn: '24h'
            });
            res.send({error:"null",token:JWTToken});
          }

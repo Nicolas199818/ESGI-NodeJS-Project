@@ -7,7 +7,8 @@ const JwtCle = process.env.JWT_KEY || 'secret';
 /* GET users listing. */
 router.get('/', function(req, res, next) {
   //Objectif 1 : Checker s'il y a un token dans l'entête. S'il n'y a pas de tocken --> une erreur.
-  const token = req.get('x-access-token');
+  const token = req.header('Authorization');
+  console.log('ON test le token '+req.header('Authorization'));
 
   try{
     var decode = jwt.verify(token,JwtCle);
@@ -67,4 +68,5 @@ function getNotesFunction(user,password,res,decode){
 
   client.close();
 })();*/
+  res.send({error:null});
 }
