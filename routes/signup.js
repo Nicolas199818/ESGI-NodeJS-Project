@@ -60,14 +60,14 @@ function signupFunction(user,password,res){
       userId = response["ops"][0]["_id"]
 
       console.log('PGKROJFGIORSIG',response["ops"][0]["_id"]);
-      const JWTToken = jwt.sign({
-        userId: userId
-      },
-      JwtCle,
-       {
-         expiresIn: '24h'
-       });
-       res.send({error:"null",token:JWTToken});
+      jwt.sign({user},JwtCle, { expiresIn: '24h' }, (err, token) => {
+        console.log("Putaiin"+JwtCle);
+        res.send({
+          token:token,
+          error:"null"
+        });
+      });
+       //res.send({error:"null",token:JWTToken});
       }
       });
 

@@ -12,8 +12,10 @@ router.get('/', function(req, res, next) {
 
   try{
     var decode = jwt.verify(token,JwtCle);
-    getNotesFunction(user,password,res,decode)
+    console.log('On test le verify : '+decode);
+    //getNotesFunction(user,password,res,decode)
   }catch(err){
+    console.log(err);
     res.status(403).send({error:"Utilisateur non connecte"});
   }
 
