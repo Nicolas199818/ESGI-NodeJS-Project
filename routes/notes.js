@@ -12,7 +12,7 @@ router.get('/', function(req, res, next) {
 
   try{
     var decode = jwt.verify(token,JwtCle);
-    console.log('On test le verify : '+decode);
+    console.log('On test le verify : '+decode.userId);
     //getNotesFunction(user,password,res,decode)
   }catch(err){
     console.log(err);

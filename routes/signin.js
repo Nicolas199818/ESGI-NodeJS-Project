@@ -59,7 +59,7 @@ function signupFunction(user,password,res){
           console.log('Response de la mort : '+response._id);
           console.log('Nicolass '+user);
           console.log("Putaiin"+JwtCle);
-          jwt.sign({user}, JwtCle, { expiresIn: '24h' }, (err, token) => {
+          jwt.sign({userId:userId}, JwtCle, { expiresIn: '24h' }, (err, token) => {
             res.send({
               token:token,
               error:"null"
