@@ -49,20 +49,35 @@ function signupFunction(user,password,res){
       res.status(400).send({error: 'Cet identifiant est déjà associé à un compte'});
     }
     else{
-      await myCol.insertOne(myobj);
+      var userId;
+      await myCol.insertOne(myobj, function (error, response) {
+      if(error) {
+      console.log('Error occurred while inserting');
+       // return
+      }
+      else {
+      var string = JSON.parse(response);
+      userId = response["ops"][0]["_id"]
+
+      console.log('PGKROJFGIORSIG',response["ops"][0]["_id"]);
       const JWTToken = jwt.sign({
-        email: user.email,
-        _id: user._id
+        userId: userId
       },
       JwtCle,
        {
          expiresIn: '2h'
        });
-       res.status(200).json({
+       res.send({error:"null",token:JWTToken});
+      }
+      });
+
+      console.log('Problem asynchrone',"isoefjdorjgoic")
+      //res.send({error:"blabla",token:JWTToken,userId:userId});
+       /*res.status(200).json({
           success: 'Welcome to the JWT Auth',
-          token: JWTToken
-        });
-      res.send({error:"null",token:JWTToken});
+          token: JWTToken,
+          userName:userId
+        });*/
     }
   } catch (err) {
     console.log(err.stack);
@@ -82,29 +97,28 @@ function checkUser(user){
   }
 }
 
-/*function myConnect(){
+//On fait une fonction qui permet de connaitre l id à partir du username
+
+function getIdByName(user,client){
   const MongoClient = require('mongodb').MongoClient;
   const assert = require('assert');
 
-  (async function() {
-  // Connection URL
-  const url = 'mongodb://localhost:27017/notes-api';
-  // Database Name
   const dbName = 'notes-api';
-  const client = new MongoClient(url);
-
   try {
     // Use connect method to connect to the Server
-    await client.connect();
-    const db = client.db(dbName);
 
+    const db = client.db(dbName);
+    var myCol = db.collection("users");
+    var userIdToken = myCol.findOne({username:user})._id;
+    console.log("USER ID TOKEN :"+userIdToken)
+    return userIdToken;
   } catch (err) {
-    console.log(err.stack);
+    console.log("TA MERE LA GROSSE PUTE");
   }
 
   client.close();
-})();
-}*/
+}
+
 
 
 //Etape n°1 : Réussir à créer un utilisateur dans la base de donnée.

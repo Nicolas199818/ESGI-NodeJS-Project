@@ -1,6 +1,8 @@
 var express = require('express');
 var router = express.Router();
 const jwt = require('jsonwebtoken');
+const url = process.env.MONGODB_URI || "mongodb://localhost:27017/notes-api";
+const JwtCle = process.env.JWT_KEY || 'secret';
 
 router.post('/',function(req,res,next){
   //res.render('signup', { title: 'Notes-Pages' });
@@ -26,7 +28,6 @@ function signupFunction(user,password,res){
   const MongoClient = require('mongodb').MongoClient;
   const assert = require('assert');
   // Connection URL
-  const url = 'mongodb://localhost:27017/notes-api';
   // Database Name
   const dbName = 'notes-api';
 
@@ -48,18 +49,37 @@ function signupFunction(user,password,res){
       res.status(400).send({error: 'Cet identifiant est inconnu'})
     }
     else{
-      const JWTToken = jwt.sign({
+      var userId;
+      await myCol.findOne({username:user}, function (error, response) {
+        if(error) {
+        console.log('Error occurred while inserting');
+        }
+        else{
+          userId = response._id;
+          console.log('Response de la mort : '+response._id);
+          console.log('Nicolass '+user);
+          const JWTToken = jwt.sign({
+            userId: userId
+          },
+          JwtCle,
+           {
+             expiresIn: '2h'
+           });
+           res.send({error:"null",token:JWTToken});
+         }
+      });
+      /*const JWTToken = jwt.sign({
         email: user.email,
         _id: user._id
       },
-      'secret',
+      JwtCle,
        {
          expiresIn: '2h'
        });
        res.status(200).json({
           success: 'Welcome to the JWT Auth',
           token: JWTToken
-        });
+        });*/
     }
   } catch (err) {
     console.log(err.stack);
